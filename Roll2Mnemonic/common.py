@@ -26,6 +26,12 @@ from pycoin.symbols.btc import network as BTC
 import hmac
 from pycoin.encoding.bytes32 import from_bytes_32, to_bytes_32
 
+terminal_widget = None
+
+def set_terminal_widget(widget):
+    global terminal_widget
+    terminal_widget = widget
+
 # Set the locale to your preferred formatting (e.g., en_US.UTF-8)
 locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
@@ -108,7 +114,12 @@ def print_bright_orange(*args):
 
 # Clear terminal
 def clear_terminal():
-    os.system('cls' if os.name == 'nt' else 'clear')
+    if terminal_widget is not None and terminal_widget.winfo_exists():
+        terminal_widget.config(state=tk.NORMAL)
+        terminal_widget.delete("1.0", tk.END)
+        terminal_widget.config(state=tk.DISABLED)
+    else:
+        os.system('cls' if os.name == 'nt' else 'clear')
     
 # Display a centered art text
 def print_centered_art_text(text, convert, fonttype):

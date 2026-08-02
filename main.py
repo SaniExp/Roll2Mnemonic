@@ -1,4 +1,6 @@
 import secrets
+import re
+import sys
 
 from Roll2Mnemonic.common import *
 from Roll2Mnemonic.diceroll_auto import dr_auto
@@ -9,6 +11,26 @@ from Roll2Mnemonic.mcctestnet import generate_testnet_wallet
 from Roll2Mnemonic.bip85 import bip85_generator
 
 global seed_phrase, passphrase
+
+class EmbeddedTerminal:
+    """Redirect stdout/stderr into the terminal pane attached to the app."""
+
+    _ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+    def __init__(self, widget):
+        self.widget = widget
+
+    def write(self, text):
+        if not text or not self.widget.winfo_exists():
+            return
+        text = self._ansi_escape.sub("", text)
+        self.widget.config(state=tk.NORMAL)
+        self.widget.insert(tk.END, text)
+        self.widget.see(tk.END)
+        self.widget.config(state=tk.DISABLED)
+
+    def flush(self):
+        pass
 
 def enable_buttons():
     t1_start_dice_button.config(state="normal")
@@ -260,11 +282,50 @@ def transfer_to_bip85(seed_phrase, passphrase):
 # Create the main window
 root = tk.Tk()
 root.title("Roll2Mnemonic")
-root.geometry("450x480")
+root.geometry("1200x760")
+root.minsize(900, 600)
+
+root.grid_rowconfigure(0, weight=1)
+root.grid_columnconfigure(0, weight=1)
+root.grid_columnconfigure(1, weight=2)
+
+# Persistent terminal pane on the left.
+terminal_frame = tk.LabelFrame(root, text="Terminal Output", padx=5, pady=5)
+terminal_frame.grid(row=0, column=0, sticky="nsew", padx=(8, 4), pady=8)
+terminal_frame.grid_rowconfigure(0, weight=1)
+terminal_frame.grid_columnconfigure(0, weight=1)
+
+terminal_output = tk.Text(
+    terminal_frame,
+    width=72,
+    height=40,
+    wrap="none",
+    state=tk.DISABLED,
+    bg="#111111",
+    fg="#eeeeee",
+    insertbackground="#ffffff",
+    font=("Consolas", 9),
+)
+terminal_output.grid(row=0, column=0, sticky="nsew")
+terminal_scrollbar = ttk.Scrollbar(terminal_frame, orient="vertical", command=terminal_output.yview)
+terminal_scrollbar.grid(row=0, column=1, sticky="ns")
+terminal_output.config(yscrollcommand=terminal_scrollbar.set)
+
+set_terminal_widget(terminal_output)
+
+# Keep all existing print-based output attached to the application window.
+sys.stdout = EmbeddedTerminal(terminal_output)
+sys.stderr = EmbeddedTerminal(terminal_output)
+
+# Control pane on the right.
+control_frame = tk.Frame(root)
+control_frame.grid(row=0, column=1, sticky="nsew", padx=(4, 8), pady=8)
+control_frame.grid_rowconfigure(0, weight=1)
+control_frame.grid_columnconfigure(0, weight=1)
 
 # Create tabs
-notebook = ttk.Notebook(root)
-notebook.pack(fill='both')
+notebook = ttk.Notebook(control_frame)
+notebook.grid(row=0, column=0, sticky="nsew")
 
 # Create tab 1: Dice Roll
 tab1 = tk.Frame(notebook)

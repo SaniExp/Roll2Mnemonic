@@ -1,4 +1,4 @@
-import random
+import secrets
 from mnemonic import Mnemonic
 from mnemonic import Mnemonic as bip39
 import platform

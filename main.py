@@ -74,15 +74,6 @@ def clear_qr_code():
 def format_with_thousand_separator(value):
     return locale.format_string("%d", value, grouping=True)
 
-def on_entry_change(event):
-    try:
-        value = int(t2f4_entropy_entry.get().replace(',', ''))
-        formatted_value = format_with_thousand_separator(value)
-        t2f4_entropy_entry.delete(0, tk.END)
-        t2f4_entropy_entry.insert(0, formatted_value)
-    except ValueError:
-        pass
-
 def on_entry_change_indices(event):
     def format_and_set_entry(entry, value):
         formatted_value = format_with_thousand_separator(value)
@@ -183,38 +174,26 @@ def generate_seed():
             num_child_keys = int(t2f6_child_keys.get())
             if 1 <= num_child_keys <= 25:
                 try:
-                    entropy_generation = int(t2f4_entropy_entry.get().replace(',', ''))
-                    if 1000 <= entropy_generation <= 10000000:
-                        entropy_lengths = {"12": 128, "15": 160, "18": 192, "21": 224, "24": 256}
-                        entropy_bytes = entropy_lengths.get(str(num_words))
+                    entropy_lengths = {"12": 128, "15": 160, "18": 192, "21": 224, "24": 256}
+                    entropy_bytes = entropy_lengths.get(str(num_words))
 
-                        random_data_list = [os.urandom(entropy_bytes // 8) for _ in range(entropy_generation)]
-                        print(f"\n Generating a list of {entropy_generation:,} random Hex entropies.")
-                        entropy_display = t2f4_display_entropy.get()
-                        if entropy_display == "Display":
-                            for i, entropy in enumerate(random_data_list):
-                                print(f"  Entropy {i + 1:,}: {entropy.hex()}")
-                        while True:
-                            chosen_entropy = random.choice(random_data_list)
-                            print(f"\n Choosing a random Hex entropy from the list.")
-                            if entropy_display == "Display":
-                                print(f"  Entropy {random_data_list.index(chosen_entropy) + 1:,}: {chosen_entropy.hex()} has been chosen.\n")
-                            mnemonic = Mnemonic("english")
-                            seed_phrase = mnemonic.to_mnemonic(chosen_entropy)
-
-                            if is_valid_seed(seed_phrase):
-                                tab2_message.config(text="Mnemonic Seed Phrase Generated Successfully.")
-                                tab2_continue_to_bip85_button.config(state="normal")
-                                network_type = t2f8_network_type_var.get()
-                                if network_type == "Mainnet":
-                                    generate_mainnet_wallet(seed_phrase, num_child_keys, passphrase, list_type)
-                                elif network_type == "Testnet":
-                                    generate_testnet_wallet(seed_phrase, num_child_keys, passphrase, list_type)
-                                return
-                    else:
-                        tab2_message.config(text="Invalid number of entropies, must be between 10,000 and 10,000,000.")
+                    # One CSPRNG sample is sufficient. Keeping millions of
+                    # samples in a list adds no security and can exhaust RAM.
+                    chosen_entropy = os.urandom(entropy_bytes // 8)
+                    print("\n Generating entropy from the operating-system CSPRNG.")
+                    mnemonic = Mnemonic("english")
+                    seed_phrase = mnemonic.to_mnemonic(chosen_entropy)
+                    if is_valid_seed(seed_phrase):
+                        tab2_message.config(text="Mnemonic Seed Phrase Generated Successfully.")
+                        tab2_continue_to_bip85_button.config(state="normal")
+                        network_type = t2f8_network_type_var.get()
+                        if network_type == "Mainnet":
+                            generate_mainnet_wallet(seed_phrase, num_child_keys, passphrase, list_type)
+                        elif network_type == "Testnet":
+                            generate_testnet_wallet(seed_phrase, num_child_keys, passphrase, list_type)
+                        return
                 except ValueError:
-                    tab2_message.config(text="Invalid number of entropies, must be an integer.")
+                    tab2_message.config(text="Unable to generate entropy from the operating-system CSPRNG.")
             else:
                 tab2_message.config(text="Invalid number of child keys, must be between 1 and 25.")
         except ValueError:
@@ -393,23 +372,14 @@ for i, t2f3_word_count in enumerate(t2f3_mnemonic_words):
                                       command=lambda count=t2f3_word_count: t2f3_num_words_var.set(count))
     t2f3_num_words_button.grid(row=0, column=i + 2, padx=4, pady=0)
 
-tab2_f4 = tk.LabelFrame(tab2, text="Number Of Hex Entropies To Generate (1,000 - 10,000,000)", padx=10, pady=6, labelanchor="n")
+tab2_f4 = tk.LabelFrame(tab2, text="Entropy Source", padx=10, pady=6, labelanchor="n")
 tab2_f4.grid(row=3, column=0, columnspan=12, padx=10, pady=6)
-t2f4_entropy_entry = tk.Entry(tab2_f4, justify="center")
-t2f4_entropy_entry.insert(0, "1,000,000")
-t2f4_entropy_entry.grid(row=0, column=0, columnspan=6, padx=5, pady=0)
-t2f4_entropy_entry.config(width=30)
-t2f4_entropy_entry.bind("<FocusOut>", on_entry_change)
-
-t2f4_display_entropy = tk.StringVar()
-t2f4_display_entropy.set("Hide")
-t2f4_display_entropy_yes = tk.Radiobutton(tab2_f4, text="Display Entropy", variable=t2f4_display_entropy, value="Display")
-t2f4_display_entropy_no = tk.Radiobutton(tab2_f4, text="Hide Entropy", variable=t2f4_display_entropy, value="Hide")
-t2f4_display_entropy_yes.grid(row=0, column=10)
-t2f4_display_entropy_no.grid(row=0, column=11)
-
-t2f4_display_entropy_warning = tk.Label(tab2_f4, text="Displaying a long list of entropies may take a significant amount of time", fg="red")
-t2f4_display_entropy_warning.grid(row=1, column=0, columnspan=12)
+t2f4_display_entropy_warning = tk.Label(
+    tab2_f4,
+    text="Entropy is generated with the operating-system CSPRNG. Do not display it unless necessary.",
+    fg="red",
+)
+t2f4_display_entropy_warning.grid(row=0, column=0, columnspan=12)
 
 tab2_f5 = tk.LabelFrame(tab2, text="Passphrase (optional)", padx=10, pady=5, labelanchor="n")
 tab2_f5.grid(row=5, column=0, columnspan=6, padx=10, pady=5)

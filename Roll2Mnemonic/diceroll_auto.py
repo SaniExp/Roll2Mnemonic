@@ -20,10 +20,10 @@ def word_to_binary(word, word_list):
     return binary_representation
 
 def roll_dice(n, num_rolls):  # n is the dice side numbers, num_rolls how many times to roll each number
-    auto_dice_list = []
-    auto_dice = [random.randint(1, n) for _ in range(num_rolls)] 
-    auto_dice_list.append(auto_dice)
-    return auto_dice_list
+    # secrets.randbelow() uses the operating system CSPRNG and avoids the
+    # predictable Mersenne Twister used by random.randint().
+    auto_dice = [secrets.randbelow(n) + 1 for _ in range(num_rolls)]
+    return auto_dice
 
 def dr_auto(num_words):
     while True:
@@ -46,7 +46,7 @@ def dr_auto(num_words):
         for i in range(1, num_words):
             numeric_list = []
             for x in range(0, 11):
-                start = random.choice(random.choice(roll_dice(10000, 1000)))
+                start = secrets.choice(roll_dice(10000, 1000))
                 numeric_list.append(start)
             binary_digits = [1 if num % 2 == 0 else 0 for num in numeric_list]  # odd numbers are converted 0, even numbers are converted 1  
             binary_str = ''.join(map(str, binary_digits))
@@ -63,7 +63,7 @@ def dr_auto(num_words):
 
         numeric_list = []
         for x in range(0, num_binary_digits[num_words]):
-            start = random.choice(random.choice(roll_dice(10000, 10)))
+            start = secrets.choice(roll_dice(10000, 10))
             numeric_list.append(start)
         binary_digits = [1 if num % 2 == 0 else 0 for num in numeric_list]  # odd numbers are converted 0, even numbers are converted 1  
         last_word_binary = ''.join(map(str, binary_digits))

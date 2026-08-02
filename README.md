@@ -14,30 +14,41 @@ Table Of Contents
 
 # Roll2Mnemonic
 
-This multifaceted tool empowers you to effortlessly create secure mnemonic seed phrases using either manual dice rolls, coin tosses or seed phrases. It then goes a step further by generating corresponding private keys and public addresses for all available Bitcoin script types. Whether you prefer manual or automated methods, this tool has you covered.
+Roll2Mnemonic is an educational tool for studying BIP39 mnemonic generation, Bitcoin derivation paths, addresses, and BIP85 child mnemonics. It can generate corresponding private keys and public addresses for supported Bitcoin script types.
+
+The application opens with an embedded terminal on the left and controls on the right. It starts maximized, requires an explicit security acknowledgement, and currently exposes 12-word and 24-word choices in the UI. Other supported word-count controls remain in the code for future use.
 
 ## Features
 
 - **Dice Roll:**
     1. Physical Dice or Coin Toss: You have the flexibility to roll physical dice or conduct a coin toss and input the resulting data as either binary (1 or 0) or numbers (1 to 6). This method ensures absolute randomness for generating your mnemonic seed phrase.
-    2. Dice Roll From Entropy: For a quicker approach, the program can generate random dice rolls for you. The automated dice roll function guarantees the essential randomness needed for a secure seed phrase.
+    2. Generate From Entropy: The application uses Python's OS-backed `secrets` CSPRNG for this educational mode. This mode is not recommended for real funds; use your own physical dice or coin flips for highest assurance.
     3. Mnemonic Seed Generation: After collecting the dice roll data, the program seamlessly proceeds to generate a valid checksum and creates a BIP39 mnemonic seed phrase. This seed phrase forms the cornerstone for generating Bitcoin private keys and public addresses.
     4. Mnemonic Code Converter: The generated mnemonic seed phrase is then processed through the Mnemonic Code Converter, capable of generating BIP39 private keys and public addresses for all script types: Legacy (P2PKH), Nested SegWit (P2SH-P2WPKH), Native SegWit (P2WPKH), and Taproot (P2TR).
 - **Mnemonic Converter:**
-    1. Generate Hex Seed From Entropy: The program can generate a Hex seed from entropy. The automated function guarantees the essential randomness required for secure seed generation.
+    1. Generate From Entropy: The application can generate entropy with the OS-backed CSPRNG for educational testing. This mode is explicitly not recommended for real funds.
     2. Mnemonic Seed Generation: After collecting the Hex seed, the program seamlessly proceeds to generate a valid checksum and creates a BIP39 mnemonic seed phrase.
     3. Own Mnemonic Seed Phrase: You have the option to enter your own mnemonic seed phrase into the program.
     4. Mnemonic Code Converter: The generated mnemonic seed phrase is then processed through the Mnemonic Code Converter, capable of generating BIP39 private keys and public addresses for all script types: Legacy (P2PKH), Nested SegWit (P2SH-P2WPKH), Native SegWit (P2WPKH), and Taproot (P2TR).
 - **BIP85 Generator:** Generate BIP85 Child Keys from your own Mnemonic Seed Phrase or using seeds generated with the tools above, then specify the numbers of words and number of Child Keys using the index number.
 - **QR Code Generator:** A built-in QR code generator from text.
 
+## Security warning
+
+This project is educational and has not been independently audited. Do not use it to generate or handle real Bitcoin funds without independently reviewing and verifying the complete code, dependencies, operating system, and device.
+
+A seed phrase and passphrase control the wallet. If they are exposed, an attacker can spend the funds, and Bitcoin transactions are generally irreversible. A valid BIP39 checksum does not prove that the original entropy was secure; weak, predictable, reused, or manipulated entropy can produce a phrase an attacker can reproduce.
+
+For the highest assurance, use a trusted offline device and create entropy by rolling your own fair dice or performing your own fair coin flips. Never enter a seed or passphrase into a website, online verifier, screenshot, cloud service, or untrusted computer. Before funding a wallet, independently verify its addresses and test restoration from an offline backup.
+
 
 ## Prerequisites
 
 Before using the Mnemonic Code Converter, ensure you have the following prerequisites installed on your system:
 
-- Python 3.11.x
-- Required Python libraries: Mnemonic, bip32utils, base58, bech32, in addition to more libraries which can be found in requirements.txt
+- Python 3.11 or newer (the current development environment uses Python 3.13)
+- Tkinter (included with the standard Windows Python installer)
+- Python packages listed in `requirements.txt`
 
 
 ## Installation
@@ -61,17 +72,17 @@ https://github.com/SaniExp/Roll2Mnemonic/archive/refs/heads/main.zip
 ```
 
 
-## Online Usage
+## Usage
 
 Follow these steps to use the Roll2Mnemonic:
 
 1. Clone or download this repository to your local machine.
-2. Ensure you have Python 3.11.x  or above installed.
+2. Ensure you have Python 3.11 or above installed.
 3. Install the necessary Python libraries listed in requirements.txt
 4. Launch main.py to initiate the code.
 
 
-## Offline Usage:
+## Offline Usage
 
 To set up Python in an offline environment you must download the packages by using an internet-enabled computer, and then transfer the files to the offline computer.
 Ensure target machine is the same architecture, OS, and Python version as the original device.
@@ -140,12 +151,7 @@ https://pip.pypa.io/en/stable/installation/
        done
        ```
 
-Now your offline device should have all the required dependencies to run offline.
-
-
-## Demo Video
-
-  [![Video](http://img.youtube.com/vi/zpM8gb1_vQQ/0.jpg)](https://www.youtube.com/watch?v=zpM8gb1_vQQ)
+Now your offline device should have the required dependencies to run offline. Do not use the online clone/download machine to enter or generate wallet secrets.
 
 ## Support and Feedback
 
@@ -160,7 +166,7 @@ If you find this project useful and would like to support its development, you c
 
 ## Disclaimer
 
-This tool should only be employed within a secure environment. When running the script, we strongly advise reading the disclaimer message to gain a comprehensive understanding of the risks associated with using such tools on unsecured devices.
+The application displays a security disclaimer and requires the user to type `I UNDERSTAND` before use. This acknowledgement is not a security guarantee. If the device, operating system, dependencies, display, terminal output, logs, or application is compromised, assume every displayed seed, passphrase, private key, and extended private key is compromised and abandon the wallet.
 
 ## License
 

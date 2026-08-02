@@ -1,22 +1,13 @@
 from mnemonic import Mnemonic
 from mnemonic import Mnemonic as bip39
-import platform
-import subprocess
-import keyboard
 import os
 import locale
-import datetime
 from bip32utils import BIP32Key
 import hashlib
 import binascii
 import base58
-import bech32
-from hashlib import sha256
-from bitcoinaddress import segwit_addr
-from bitcoinaddress.key.key import Key
-from bitcoinaddress.address import Address
 from bitcoinutils.setup import setup
-from bitcoinutils.keys import P2pkhAddress, PrivateKey, PublicKey
+from bitcoinutils.keys import PrivateKey, PublicKey
 from art import *
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -25,7 +16,7 @@ import qrcode
 from PIL import Image, ImageTk
 from pycoin.symbols.btc import network as BTC
 import hmac
-from pycoin.encoding.bytes32 import from_bytes_32, to_bytes_32
+from pycoin.encoding.bytes32 import to_bytes_32
 
 terminal_widget = None
 
@@ -135,26 +126,6 @@ def print_centered_art_text(text, convert, fonttype):
         padding = " " * max(0, (terminal_width - len(line)) // 2)
         print(padding + line)
 
-def maximize_window():
-    system = platform.system()
-    
-    if system == 'Windows':
-        # Windows: Send Win + Up Arrow
-        keyboard.press_and_release('win+up')
-    elif system == 'Darwin':
-        # macOS: Send Ctrl + Command + F
-        keyboard.press_and_release('ctrl+cmd+f')
-    elif system == 'Linux':
-        try:
-            # Linux: Send Alt + F10 (using wmctrl if available)
-            subprocess.check_output(['wmctrl', '--version'])
-            subprocess.run(['wmctrl', '-r', ':ACTIVE:', '-b', 'add,maximized_vert,maximized_horz'])
-        except subprocess.CalledProcessError:
-            # If wmctrl is not available, send Alt + F10 using keyboard
-            keyboard.press_and_release('alt+f10')
-    else:
-        print(f"Unsupported operating system: {system}")
-   
 # Function to check if a seed phrase is valid
 def is_valid_seed(seed_phrase):
     try:

@@ -4,3 +4,4 @@ library/*
 !library/README.md
 .idea
 venv
+GPG

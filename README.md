@@ -49,7 +49,7 @@ You can clone this repository to your local machine using the following method:
 To clone the repository using HTTPS, open your terminal or command prompt and run the following command:
 
 ```bash
-git clone https://github.com/FahsSani/Roll2Mnemonic.git
+git clone https://github.com/SaniExp/Roll2Mnemonic.git
 ```
 
 ### Direct Download 
@@ -57,7 +57,7 @@ git clone https://github.com/FahsSani/Roll2Mnemonic.git
 Download and extract the following file:
 
 ```bash
-https://github.com/FahsSani/Roll2Mnemonic/archive/refs/heads/main.zip
+https://github.com/SaniExp/Roll2Mnemonic/archive/refs/heads/main.zip
 ```
 
 

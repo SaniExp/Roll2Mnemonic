@@ -1,3 +1,5 @@
+import secrets
+
 from Roll2Mnemonic.common import *
 from Roll2Mnemonic.diceroll_auto import dr_auto
 from Roll2Mnemonic.diceroll_binary import dr_binary
@@ -179,7 +181,7 @@ def generate_seed():
 
                     # One CSPRNG sample is sufficient. Keeping millions of
                     # samples in a list adds no security and can exhaust RAM.
-                    chosen_entropy = os.urandom(entropy_bytes // 8)
+                    chosen_entropy = secrets.token_bytes(entropy_bytes // 8)
                     print("\n Generating entropy from the operating-system CSPRNG.")
                     mnemonic = Mnemonic("english")
                     seed_phrase = mnemonic.to_mnemonic(chosen_entropy)

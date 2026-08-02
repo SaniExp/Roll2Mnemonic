@@ -1,4 +1,3 @@
-import secrets
 from mnemonic import Mnemonic
 from mnemonic import Mnemonic as bip39
 import platform
@@ -68,9 +67,9 @@ def main():
     print_centered_art_text(text2, 5, "Standard")
 
     # Information box
-    creator_info = f"Created By          : Sani Fahs"
+    creator_info = f"Created By          : SaniExp"
     twitter_info = f"Twitter             : @SaniExp"
-    github_info = f"GitHub              : https://github.com/FahsSani"
+    github_info = f"GitHub              : https://github.com/SaniExp"
     lightning_info = f"Lightning Donations : sani@walletofsatoshi.com"
     max_info_length = max(len(creator_info), len(twitter_info), len(github_info), len(lightning_info))
     box_width = max_info_length + 4

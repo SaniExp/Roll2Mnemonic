@@ -41,6 +41,8 @@ A seed phrase and passphrase control the wallet. If they are exposed, an attacke
 
 For the highest assurance, use a trusted offline device and create entropy by rolling your own fair dice or performing your own fair coin flips. Never enter a seed or passphrase into a website, online verifier, screenshot, cloud service, or untrusted computer. Before funding a wallet, independently verify its addresses and test restoration from an offline backup.
 
+The `library/` directory contains archived development snapshots. Do not execute files from that directory; they are not covered by the current security review.
+
 
 ## Prerequisites
 
@@ -80,6 +82,12 @@ Follow these steps to use the Roll2Mnemonic:
 2. Ensure you have Python 3.11 or above installed.
 3. Install the necessary Python libraries listed in requirements.txt
 4. Launch main.py to initiate the code.
+
+To run the automated tests:
+
+```bash
+python -m unittest discover -s tests -v
+```
 
 
 ## Offline Usage

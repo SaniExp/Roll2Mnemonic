@@ -1,7 +1,8 @@
-mnemonic>=0.20
-bip32utils>=0.3.post4
-base58>=2.1.1
-bitcoin-utils>=0.6.3
-art>=6.0
-qrcode[pil]>=7.4.2
-pycoin>=0.92.20230326
+mnemonic==0.21
+bip32utils==0.3.post4
+base58==2.1.1
+bitcoin-utils==0.7.3
+art==6.5
+qrcode[pil]==8.2
+Pillow==12.0.0
+pycoin==0.92718.20260405

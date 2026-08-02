@@ -1,4 +1,6 @@
 __pycache__
-library
+library/*
+!library/
+!library/README.md
 .idea
 venv

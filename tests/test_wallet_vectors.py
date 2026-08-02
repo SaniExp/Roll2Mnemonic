@@ -1,6 +1,16 @@
 import contextlib
 import io
 import unittest
+import warnings
+
+# bip32utils still calls two deprecated compatibility functions in ecdsa 0.19.
+# This narrowly suppresses that known third-party warning without hiding other
+# deprecations or runtime errors from the application and tests.
+warnings.filterwarnings(
+    "ignore",
+    message=r"Function is unused in library code\..*",
+    category=DeprecationWarning,
+)
 
 from mnemonic import Mnemonic
 
@@ -27,7 +37,13 @@ class BitcoinVectorTests(unittest.TestCase):
     mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
 
     def test_bip84_and_bip86_addresses(self):
-        addresses, _ = generate_mainnet_addresses(self.mnemonic, 1, "")
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=r"Function is unused in library code\..*",
+                category=DeprecationWarning,
+            )
+            addresses, _ = generate_mainnet_addresses(self.mnemonic, 1, "")
         self.assertEqual(
             addresses["Native SegWit (P2WPKH)R"][0][4],
             "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu",

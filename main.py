@@ -1,6 +1,8 @@
 import secrets
+import ctypes
 import re
 import sys
+from tkinter import simpledialog
 
 from Roll2Mnemonic.common import *
 from Roll2Mnemonic.diceroll_auto import dr_auto
@@ -16,21 +18,110 @@ class EmbeddedTerminal:
     """Redirect stdout/stderr into the terminal pane attached to the app."""
 
     _ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    _ansi_color = re.compile(r"\x1B\[([0-9;]*)m")
 
     def __init__(self, widget):
         self.widget = widget
+        self.current_tag = None
+        self.widget.tag_configure("red", foreground="#ff5555")
+        self.widget.tag_configure("blue", foreground="#5599ff")
+        self.widget.tag_configure("green", foreground="#55dd55")
+        self.widget.tag_configure("cyan", foreground="#55dddd")
+        self.widget.tag_configure("purple", foreground="#dd77ff")
+        self.widget.tag_configure("orange", foreground="#ff9900")
+
+    def _tag_for_codes(self, codes):
+        if not codes or "0" in codes:
+            return None
+        if "91" in codes:
+            return "red"
+        if "94" in codes:
+            return "blue"
+        if "92" in codes:
+            return "green"
+        if "96" in codes:
+            return "cyan"
+        if "95" in codes:
+            return "purple"
+        if "38;5;208" in ";".join(codes):
+            return "orange"
+        return self.current_tag
 
     def write(self, text):
         if not text or not self.widget.winfo_exists():
             return
-        text = self._ansi_escape.sub("", text)
         self.widget.config(state=tk.NORMAL)
-        self.widget.insert(tk.END, text)
+        position = 0
+        for match in self._ansi_color.finditer(text):
+            plain_text = text[position:match.start()]
+            if plain_text:
+                self.widget.insert(tk.END, plain_text, self.current_tag or "")
+            codes = match.group(1).split(";")
+            self.current_tag = self._tag_for_codes(codes)
+            position = match.end()
+        plain_text = text[position:]
+        if plain_text:
+            self.widget.insert(tk.END, plain_text, self.current_tag or "")
         self.widget.see(tk.END)
         self.widget.config(state=tk.DISABLED)
 
     def flush(self):
         pass
+
+def hide_windows_console():
+    """Hide the console host when the GUI is launched with python.exe."""
+    if os.name != "nt":
+        return
+    console_window = ctypes.windll.kernel32.GetConsoleWindow()
+    if console_window:
+        ctypes.windll.user32.ShowWindow(console_window, 0)
+
+def size_layout_to_controls():
+    """Size the controls column for the selected tab and give the rest to output."""
+    root.update_idletasks()
+    selected_tab = notebook.nametowidget(notebook.select())
+    tab_width = selected_tab.winfo_reqwidth()
+
+    # Let the persistent warning follow the active tab width instead of
+    # forcing every tab to use the width of the largest tab.
+    entropy_warning.configure(wraplength=max(320, tab_width - 20))
+    root.update_idletasks()
+    control_width = max(tab_width, entropy_warning.winfo_reqwidth())
+    control_width += 12  # outer horizontal padding
+
+    root.grid_columnconfigure(0, weight=1, minsize=0)
+    root.grid_columnconfigure(1, weight=0, minsize=control_width)
+
+def require_disclaimer_acknowledgement():
+    """Require an explicit acknowledgement before the application is usable."""
+    while True:
+        acknowledgement = simpledialog.askstring(
+            "Critical Security Warning",
+            "This tool can generate or display Bitcoin wallet secrets.\n\n"
+            "If a seed or passphrase is compromised, funds can be permanently lost.\n"
+            "Type I UNDERSTAND to acknowledge the risks and continue:",
+            parent=root,
+        )
+        if acknowledgement is None:
+            return False
+        if acknowledgement.strip().upper() == "I UNDERSTAND":
+            print_green("\n Security warning acknowledged. Use this tool only in a trusted environment.\n")
+            return True
+        messagebox.showerror(
+            "Acknowledgement Required",
+            "Please type exactly: I UNDERSTAND\n\nCancel to close the application.",
+            parent=root,
+        )
+
+def maximize_app():
+    if os.name == "nt":
+        root.state("zoomed")
+    else:
+        try:
+            root.attributes("-zoomed", True)
+        except tk.TclError:
+            pass
+    root.update_idletasks()
 
 def enable_buttons():
     t1_start_dice_button.config(state="normal")
@@ -287,7 +378,7 @@ root.minsize(900, 600)
 
 root.grid_rowconfigure(0, weight=1)
 root.grid_columnconfigure(0, weight=1)
-root.grid_columnconfigure(1, weight=2)
+root.grid_columnconfigure(1, weight=0)
 
 # Persistent terminal pane on the left.
 terminal_frame = tk.LabelFrame(root, text="Terminal Output", padx=5, pady=5)
@@ -304,12 +395,17 @@ terminal_output = tk.Text(
     bg="#111111",
     fg="#eeeeee",
     insertbackground="#ffffff",
-    font=("Consolas", 9),
+    font=("Consolas", 11),
 )
 terminal_output.grid(row=0, column=0, sticky="nsew")
 terminal_scrollbar = ttk.Scrollbar(terminal_frame, orient="vertical", command=terminal_output.yview)
 terminal_scrollbar.grid(row=0, column=1, sticky="ns")
-terminal_output.config(yscrollcommand=terminal_scrollbar.set)
+terminal_x_scrollbar = ttk.Scrollbar(terminal_frame, orient="horizontal", command=terminal_output.xview)
+terminal_x_scrollbar.grid(row=1, column=0, sticky="ew")
+terminal_output.config(
+    yscrollcommand=terminal_scrollbar.set,
+    xscrollcommand=terminal_x_scrollbar.set,
+)
 
 set_terminal_widget(terminal_output)
 
@@ -321,11 +417,29 @@ sys.stderr = EmbeddedTerminal(terminal_output)
 control_frame = tk.Frame(root)
 control_frame.grid(row=0, column=1, sticky="nsew", padx=(4, 8), pady=8)
 control_frame.grid_rowconfigure(0, weight=1)
+control_frame.grid_rowconfigure(1, weight=0)
 control_frame.grid_columnconfigure(0, weight=1)
 
 # Create tabs
 notebook = ttk.Notebook(control_frame)
 notebook.grid(row=0, column=0, sticky="nsew")
+
+entropy_warning = tk.Label(
+    control_frame,
+    text=(
+        "WARNING: Generate From Entropy is not considered secure for real-world wallet use.\n"
+        "For the utmost entropy, always roll your own dice or perform your own coin flips."
+    ),
+    fg="#9b0000",
+    bg="#fff0f0",
+    font=("Segoe UI", 12, "bold"),
+    justify="center",
+    wraplength=560,
+    padx=12,
+    pady=12,
+)
+entropy_warning.grid(row=1, column=0, sticky="ew", padx=4, pady=(8, 4))
+notebook.bind("<<NotebookTabChanged>>", lambda event: root.after_idle(size_layout_to_controls))
 
 # Create tab 1: Dice Roll
 tab1 = tk.Frame(notebook)
@@ -351,6 +465,8 @@ for i, t1f2_word_count in enumerate(t1f2_mnemonic_words):
     t1f2_num_words_button = tk.Radiobutton(tab1_f2, text=str(t1f2_word_count) + " Words", variable=t1f2_num_words_var, value=t1f2_word_count,
                                       command=lambda count=t1f2_word_count: t1f2_num_words_var.set(count))
     t1f2_num_words_button.grid(row=0, column=i + 2, padx=4, pady=0)
+    if t1f2_word_count not in (12, 24):
+        t1f2_num_words_button.grid_remove()
 
 tab1_f3 = tk.LabelFrame(tab1, text="Choose Input Type", padx=10, pady=0, labelanchor="n")
 tab1_f3.grid(row=2, column=0, columnspan=12, padx=10, pady=5)
@@ -434,6 +550,8 @@ for i, t2f3_word_count in enumerate(t2f3_mnemonic_words):
     t2f3_num_words_button = tk.Radiobutton(tab2_f3, text=str(t2f3_word_count) + " Words", variable=t2f3_num_words_var, value=t2f3_word_count,
                                       command=lambda count=t2f3_word_count: t2f3_num_words_var.set(count))
     t2f3_num_words_button.grid(row=0, column=i + 2, padx=4, pady=0)
+    if t2f3_word_count not in (12, 24):
+        t2f3_num_words_button.grid_remove()
 
 tab2_f4 = tk.LabelFrame(tab2, text="Entropy Source", padx=10, pady=6, labelanchor="n")
 tab2_f4.grid(row=3, column=0, columnspan=12, padx=10, pady=6)
@@ -509,6 +627,8 @@ for i, t3f3_word_count in enumerate(t3f3_mnemonic_words_child):
     t3f3_num_words_child_button = tk.Radiobutton(tab3_f3, text=str(t3f3_word_count) + " Words", variable=t3f3_num_words_var,
                                                  value=t3f3_word_count, command=lambda count=t3f3_word_count: t3f3_num_words_var.set(count))
     t3f3_num_words_child_button.grid(row=0, column=i + 2, padx=4, pady=0)
+    if t3f3_word_count not in (12, 24):
+        t3f3_num_words_child_button.grid_remove()
 
 tab3_f4 = tk.LabelFrame(tab3, text="Enter Number Of BIP85 Indices ( 0 - 2,147,483,647 )", padx=10, pady=6, labelanchor="n", width=66)
 tab3_f4.grid(row=3, column=0, columnspan=12, padx=10, pady=6)
@@ -564,13 +684,19 @@ qr_code_label = tk.Label(tab4)
 qr_code_label.grid(row=7, column=0, columnspan=11)
 
 if __name__ == "__main__":
-    maximize_window()
+    hide_windows_console()
+    maximize_app()
+    size_layout_to_controls()
+    root.update()
     disclaimer()
-    tab1_generate_keys_button.config(state="disabled")
-    tab1_continue_to_bip85_button.config(state="disabled")
-    tab2_continue_to_bip85_button.config(state="disabled")
-    tab1_message.config(text=f"Buttons are temporarily disabled. \nStart dice roll to enable.")
-    on_entropy_mnemonic_select()
-    on_entropy_dice_select()
-    on_indices_change()
-    root.mainloop()
+    if not require_disclaimer_acknowledgement():
+        root.destroy()
+    else:
+        tab1_generate_keys_button.config(state="disabled")
+        tab1_continue_to_bip85_button.config(state="disabled")
+        tab2_continue_to_bip85_button.config(state="disabled")
+        tab1_message.config(text=f"Buttons are temporarily disabled. \nStart dice roll to enable.")
+        on_entropy_mnemonic_select()
+        on_entropy_dice_select()
+        on_indices_change()
+        root.mainloop()

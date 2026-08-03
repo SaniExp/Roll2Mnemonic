@@ -19,7 +19,12 @@ def word_to_binary(word, word_list):
     binary_representation = bin(index)[2:].zfill(11)
     return binary_representation
 
-def dr_numeric(num_words):
+def read_custom_value(input_func, prompt, max_length, allowed_chars):
+    if input_func is input:
+        return input_func(prompt)
+    return input_func(prompt, max_length=max_length, allowed_chars=allowed_chars)
+
+def dr_numeric(num_words, input_values=None, input_func=input):
     mnemo = Mnemonic("english")
     word_list = mnemo.wordlist
     binary_wordlist = convert_wordlist_to_binary(word_list)
@@ -45,31 +50,37 @@ def dr_numeric(num_words):
               f"\n Each word requires 11 binary numbers (1 to 6); for the last word, input only {last_word_bit} numbers.")
     print()
 
-    for i in range(1, num_words):
-        while True:
-            digit = input(f" Enter 11 numbers between (1 and 6) for Word {i:02}: [           ]\b\b\b\b\b\b\b\b\b\b\b\b")
-            digit = digit.strip('[]')
-            if len(digit) == 11 and digit.isdigit() and all(digits in '123456' for digits in digit):
-                binary_str = ''.join('0' if int(d) % 2 == 1 else '1' for d in digit)  # Convert each digit and join them
-                input_binary_list.append(binary_str)
-                input_digit_list.append(digit)
-                break
-            else:
-                print(" Invalid input. Enter 11  digits containing only '1,2,3,4,5 or 6' within the brackets.")
+    if input_values is None:
+        input_values = []
+        for i in range(1, num_words):
+            while True:
+                digit = read_custom_value(input_func, f" Enter 11 numbers between 1 and 6 for Word {i:02}: ", 11, "123456")
+                digit = digit.strip('[]')
+                if len(digit) == 11 and digit.isdigit() and all(digits in '123456' for digits in digit):
+                    input_values.append(digit)
+                    break
+                print(" Invalid input. Enter 11 digits containing only 1, 2, 3, 4, 5, or 6.")
 
-    while True:
-        spaces = ' ' * num_binary_digits[num_words]
-        backspaces = '\b' * len(spaces)
-        digit = input(f" Enter {num_binary_digits[num_words]:02} numbers between (1 and 6) for Word {num_words:02}: [{spaces}]{backspaces}\b")
-        digit = digit.strip('[]')
-        if len(digit) == num_binary_digits[num_words] and digit.isdigit() and all(digits in '123456' for digits in digit):
-            binary_str = ''.join('0' if int(d) % 2 == 1 else '1' for d in digit)  # Convert each digit and join them
-            input_binary_list.append(binary_str)
-            input_digit_list.append(digit)
-            last_word_binary = binary_str
-            break
-        else:
+        while True:
+            digit = read_custom_value(input_func, f" Enter {num_binary_digits[num_words]:02} numbers between 1 and 6 for Word {num_words:02}: ", num_binary_digits[num_words], "123456")
+            digit = digit.strip('[]')
+            if len(digit) == num_binary_digits[num_words] and digit.isdigit() and all(digits in '123456' for digits in digit):
+                input_values.append(digit)
+                break
             print(f" Invalid input. Enter {num_binary_digits[num_words]:02} numbers between 1 and 6.")
+
+    expected_lengths = [11] * (num_words - 1) + [num_binary_digits[num_words]]
+    if len(input_values) != num_words or any(
+        len(value) != expected_length or not value.isdigit() or not all(digit in '123456' for digit in value)
+        for value, expected_length in zip(input_values, expected_lengths)
+    ):
+        raise ValueError("Invalid custom dice input.")
+
+    for digit in input_values:
+        binary_str = ''.join('0' if int(d) % 2 == 1 else '1' for d in digit)
+        input_binary_list.append(binary_str)
+        input_digit_list.append(digit)
+    last_word_binary = input_binary_list[-1]
 
     print()
     print()

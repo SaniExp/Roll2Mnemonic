@@ -1,8 +1,29 @@
-__pycache__
+# Python caches and environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+requirements-linux.txt
+requirements-py39.txt
 library/*
 !library/
 !library/README.md
-.idea
-venv
+
+# IDE and local tooling
+.idea/
 GPG/
 GPG
+
+# Offline build/install artifacts
+wheelhouse/
+wheelhouse-*/
+debian-packages/
+requirements-linux.txt
+requirements-py39.txt
+TAILS_INSTALL.md
+*.whl
+*.deb
+
+# Windows download metadata
+*:Zone.Identifier

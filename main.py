@@ -23,6 +23,15 @@ class EmbeddedTerminal:
     def __init__(self, widget):
         self.widget = widget
         self.current_tag = None
+        self._input_start = None
+        self._input_max_length = None
+        self._input_allowed_chars = None
+        self._input_entered = []
+        self._input_value = tk.StringVar()
+        self.widget.bind("<Return>", self._submit_input)
+        self.widget.bind("<KeyPress>", self._validate_input_key, add="+")
+        self.widget.bind("<Button-1>", self._keep_input_at_end, add="+")
+        self.widget.bind("<KeyRelease>", self._keep_input_at_end, add="+")
         self.widget.tag_configure("red", foreground="#ff5555")
         self.widget.tag_configure("blue", foreground="#5599ff")
         self.widget.tag_configure("green", foreground="#55dd55")
@@ -67,6 +76,74 @@ class EmbeddedTerminal:
 
     def flush(self):
         pass
+
+    def read_input(self, prompt="", max_length=None, allowed_chars=None):
+        """Read a line from the terminal pane while Tk continues processing events."""
+        self.widget.config(state=tk.NORMAL)
+        self.widget.insert(tk.END, prompt + "[")
+        self._input_start = self.widget.index(tk.END + "-1c")
+        self.widget.insert(self._input_start, (" " * max_length) + "]")
+        self._input_max_length = max_length
+        self._input_allowed_chars = allowed_chars
+        self._input_entered = []
+        self.widget.mark_set("input_cursor", self._input_start)
+        self.widget.mark_set("insert", self._input_start)
+        self.widget.focus_set()
+        self.widget.see(tk.END)
+        self._input_value.set("")
+        self.widget.wait_variable(self._input_value)
+        value = self._input_value.get()
+        self._input_start = None
+        self._input_max_length = None
+        self._input_allowed_chars = None
+        self._input_entered = []
+        self.widget.config(state=tk.DISABLED)
+        return value
+
+    def _submit_input(self, event):
+        if self._input_start is None:
+            return
+        value = self.widget.get(self._input_start, "input_cursor")
+        self.widget.delete("input_cursor", "end-2c")
+        self.widget.insert(tk.END, "\n")
+        self._input_value.set(value)
+        return "break"
+
+    def _validate_input_key(self, event):
+        if self._input_start is None:
+            return
+        if event.keysym == "Return":
+            return
+        if event.keysym == "BackSpace":
+            if not self._input_entered:
+                return "break"
+            cursor = self.widget.index("input_cursor")
+            previous = f"{cursor} - 1c"
+            self.widget.delete(previous, cursor)
+            self.widget.insert(previous, " ")
+            self._input_entered.pop()
+            self.widget.mark_set("input_cursor", previous)
+            self.widget.mark_set("insert", "input_cursor")
+            return "break"
+        if event.keysym in ("Left", "Right", "Home", "End", "Delete"):
+            return "break"
+        if event.char and self._input_allowed_chars is not None and event.char not in self._input_allowed_chars:
+            return "break"
+        if not event.char or len(self._input_entered) >= self._input_max_length:
+            return "break"
+        cursor = self.widget.index("input_cursor")
+        next_character = f"{cursor} + 1c"
+        self.widget.delete(cursor, next_character)
+        self.widget.insert(cursor, event.char)
+        self._input_entered.append(event.char)
+        self.widget.mark_set("input_cursor", next_character)
+        self.widget.mark_set("insert", "input_cursor")
+        return "break"
+
+    def _keep_input_at_end(self, event):
+        if self._input_start is not None:
+            self.widget.mark_set("insert", "input_cursor")
+            return "break"
 
 def hide_windows_console():
     """Hide the console host when the GUI is launched with python.exe."""
@@ -244,12 +321,16 @@ def start_dice():
     elif dice == "Own":
         disable_buttons()
         choice = t1f3_dice_choice_var.get()
-        if choice == "Binary":
-            mnemonic_seed = dr_binary(num_words)
+        try:
+            if choice == "Binary":
+                mnemonic_seed = dr_binary(num_words, input_func=terminal_input.read_input)
+            else:
+                mnemonic_seed = dr_numeric(num_words, input_func=terminal_input.read_input)
+        except ValueError as error:
             enable_buttons()
-        else:
-            mnemonic_seed = dr_numeric(num_words)
-            enable_buttons()
+            messagebox.showerror("Invalid Input", str(error), parent=root)
+            return
+        enable_buttons()
 
     seed_phrase = ' '.join(mnemonic_seed)
     print_green(f"\n Mnemonic Seed Phrase: {seed_phrase}")
@@ -408,10 +489,11 @@ terminal_output.config(
 )
 
 set_terminal_widget(terminal_output)
+terminal_input = EmbeddedTerminal(terminal_output)
 
 # Keep all existing print-based output attached to the application window.
-sys.stdout = EmbeddedTerminal(terminal_output)
-sys.stderr = EmbeddedTerminal(terminal_output)
+sys.stdout = terminal_input
+sys.stderr = terminal_input
 
 # Control pane on the right.
 control_frame = tk.Frame(root)
@@ -445,7 +527,7 @@ notebook.bind("<<NotebookTabChanged>>", lambda event: root.after_idle(size_layou
 tab1 = tk.Frame(notebook)
 notebook.add(tab1, text="Dice Roll")
 
-tab1_f1 = tk.LabelFrame(tab1, text="Dice Roll Type", labelanchor="n")
+tab1_f1 = tk.LabelFrame(tab1, text="Entropy Input Method", labelanchor="n")
 tab1_f1.grid(row=0, column=0, columnspan=12, padx=10, pady=5)
 t1f1_dice_type = tk.StringVar()
 t1f1_dice_type.set("Entropy")

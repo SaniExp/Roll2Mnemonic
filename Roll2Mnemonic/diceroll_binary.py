@@ -19,7 +19,12 @@ def word_to_binary(word, word_list):
     binary_representation = bin(index)[2:].zfill(11)
     return binary_representation
 
-def dr_binary(num_words):   
+def read_custom_value(input_func, prompt, max_length, allowed_chars):
+    if input_func is input:
+        return input_func(prompt)
+    return input_func(prompt, max_length=max_length, allowed_chars=allowed_chars)
+
+def dr_binary(num_words, input_values=None, input_func=input):
     mnemo = Mnemonic("english")
     word_list = mnemo.wordlist
     binary_wordlist = convert_wordlist_to_binary(word_list)
@@ -45,28 +50,30 @@ def dr_binary(num_words):
               f"\n For each word, input 11 binary numbers, for the last word, enter {last_word_bit} binary numbers.")
     print()
 
-    for i in range(1, num_words):
+    if input_values is None:
+        input_values = []
+        for i in range(1, num_words):
+            while True:
+                binary_str = read_custom_value(input_func, f" Enter 11 binary numbers (0 or 1) for Word {i:02}: ", 11, "01").strip('[]')
+                if len(binary_str) == 11 and binary_str.isdigit() and all(bit in '01' for bit in binary_str):
+                    input_values.append(binary_str)
+                    break
+                print(" Invalid input. Enter 11 binary numbers (0 or 1).")
         while True:
-            binary_str = input(f" Enter 11 binary numbers (0 or 1) for Word {i:02}: [           ]\b\b\b\b\b\b\b\b\b\b\b\b")
-            binary_str = binary_str.strip('[]')
-            if len(binary_str) == 11 and binary_str.isdigit() and all(bit in '01' for bit in binary_str):
-                input_binary_list.append(binary_str)
+            binary_str = read_custom_value(input_func, f" Enter {num_binary_digits[num_words]:02} binary numbers (0 or 1) for Word {num_words:02}: ", num_binary_digits[num_words], "01").strip('[]')
+            if len(binary_str) == num_binary_digits[num_words] and binary_str.isdigit() and all(bit in '01' for bit in binary_str):
+                input_values.append(binary_str)
                 break
-            else:
-                print(" Invalid input. Enter 11 binary numbers (0 or 1) within the brackets.")
-                
-        decimal_value = int(binary_str, 2) + 1
+            print(f" Invalid input. Enter {num_binary_digits[num_words]} binary numbers (0 or 1).")
 
-    while True:
-        spaces = ' ' * num_binary_digits[num_words]
-        backspaces = '\b' * len(spaces)
-        binary_str = input(f" Enter {num_binary_digits[num_words]:02} binary numbers (0 or 1) for Word {num_words:02}: [{spaces}]{backspaces}\b")
-        if len(binary_str) == num_binary_digits[num_words] and binary_str.isdigit() and all(bit in '01' for bit in binary_str):
-            input_binary_list.append(binary_str)
-            last_word_binary = binary_str
-            break
-        else:
-            print(f" Invalid input. Enter {num_binary_digits[num_words]} binary numbers (0 or 1) within the brackets.")
+    expected_lengths = [11] * (num_words - 1) + [num_binary_digits[num_words]]
+    if len(input_values) != num_words or any(
+        len(value) != expected_length or not value.isdigit() or not all(bit in '01' for bit in value)
+        for value, expected_length in zip(input_values, expected_lengths)
+    ):
+        raise ValueError("Invalid custom binary input.")
+    input_binary_list.extend(input_values)
+    last_word_binary = input_binary_list[-1]
 
     print()
     print()

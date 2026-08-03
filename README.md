@@ -49,13 +49,58 @@ The `library/` directory contains archived development snapshots. Do not execute
 Before using the Mnemonic Code Converter, ensure you have the following prerequisites installed on your system:
 
 - Python 3.11 or newer (the current development environment uses Python 3.13)
-- Tkinter (included with the standard Windows Python installer)
+- Tkinter for your operating system
 - Python packages listed in `requirements.txt`
 
 
 ## Installation
 
-You can clone this repository to your local machine using the following method:
+Install Python 3.11 or newer and Tkinter for your operating system.
+
+### Windows
+
+Install Python from [python.org](https://www.python.org/downloads/). During setup, enable **Add Python to PATH** and install `tcl/tk` when offered. In PowerShell:
+
+```powershell
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+If PowerShell blocks activation, run the commands with `.venv\Scripts\python.exe` directly instead.
+
+### Linux
+
+On Debian or Ubuntu, install Python, Tkinter, and virtual-environment support:
+
+```bash
+sudo apt update
+sudo apt install python3 python3-pip python3-tk python3-venv
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+For other distributions, install the equivalent `python3-tk` and `venv` packages using that distribution's package manager.
+
+### macOS
+
+Install Python 3.11 or newer from [python.org](https://www.python.org/downloads/macos/). The python.org installer includes Tkinter and is the recommended macOS setup for this project.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+If Tkinter cannot be imported, use the python.org installer or install the matching `python-tk` package for the Python version in use.
+
+After setup, continue with the platform-specific launch instructions below.
+
+Clone this repository to your local machine:
 
 ### HTTPS
 
@@ -63,25 +108,44 @@ To clone the repository using HTTPS, open your terminal or command prompt and ru
 
 ```bash
 git clone https://github.com/SaniExp/Roll2Mnemonic.git
+cd Roll2Mnemonic
 ```
 
 ### Direct Download 
 
-Download and extract the following file:
+Alternatively, download and extract the latest source archive:
+
+[Download the main branch as a ZIP](https://github.com/SaniExp/Roll2Mnemonic/archive/refs/heads/main.zip)
+
+## Online Usage
+
+Run the application from the repository directory after installation:
 
 ```bash
-https://github.com/SaniExp/Roll2Mnemonic/archive/refs/heads/main.zip
+python main.py
 ```
 
+On Windows PowerShell:
 
-## Usage
+```powershell
+python .\main.py
+```
 
-Follow these steps to use the Roll2Mnemonic:
+On Linux or macOS:
 
-1. Clone or download this repository to your local machine.
-2. Ensure you have Python 3.11 or above installed.
-3. Install the necessary Python libraries listed in requirements.txt
-4. Launch main.py to initiate the code.
+```bash
+python3 main.py
+```
+
+The application is local-only and does not require an internet connection while running. Select an entropy source, choose the mnemonic length, and follow the prompts in the embedded terminal. When entering your own values, use only the number and character set requested by each prompt.
+
+The application displays a security warning before use. Do not enter real seed phrases, passphrases, or private keys on an internet-connected or otherwise untrusted computer. For real wallet creation, use the offline procedure below and independently verify all generated addresses.
+
+## Platform Compatibility
+
+The application uses Python, Tkinter, and platform-neutral Python libraries and is intended to run on Windows, Linux, and macOS. Windows-specific console hiding and window maximizing are guarded by `os.name`; Linux and macOS use Tk's non-Windows zoom behavior when supported. Number formatting falls back to the system locale if `en_US.UTF-8` is unavailable.
+
+Tkinter must be installed separately on many Linux distributions and some macOS Python installations. The application has been verified in this repository's current Windows environment; Linux and macOS should be smoke-tested on the target OS before handling sensitive data.
 
 To run the automated tests:
 

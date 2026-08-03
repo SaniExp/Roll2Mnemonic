@@ -24,8 +24,12 @@ def set_terminal_widget(widget):
     global terminal_widget
     terminal_widget = widget
 
-# Set the locale to your preferred formatting (e.g., en_US.UTF-8)
-locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+# Use grouped number formatting where the platform provides the requested
+# locale, while keeping startup portable across Windows, Linux, and macOS.
+try:
+    locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+except locale.Error:
+    locale.setlocale(locale.LC_ALL, '')
 
 def disclaimer():
     # Clear terminal
